@@ -1,0 +1,28 @@
+{
+  "ticker": "CRWD",
+  "recommendation": "buy",
+  "confidence": 0.72,
+  "entry_price": {
+    "ideal": 370.0,
+    "acceptable_range": [365.0, 375.0]
+  },
+  "target_price": {
+    "conservative": 430.0,
+    "base": 520.0,
+    "optimistic": 620.0
+  },
+  "stop_loss": 330.0,
+  "position_size_recommended_usd": 7500.0,
+  "position_size_pct_of_input": 0.75,
+  "time_horizon": "medium",
+  "risk_reward_ratio": 3.75,
+  "key_conditions": [
+    "Monitor Q3 FY2025 earnings on March 4 for ARR growth above $4.2B and net retention above 120%",
+    "Watch for resolution or escalation of July 2024 outage lawsuits that could impact financials or sentiment",
+    "Exit if stock breaks below $330 support level on above-average volume",
+    "Re-evaluate position if technology sector undergoes broad multiple compression below 20x forward P/S"
+  ],
+  "bull_case_summary": "CrowdStrike is the leading cloud-native cybersecurity platform with 33% revenue growth, accelerating profitability, and a massive expanding TAM from platform consolidation. Federal zero-trust mandates and the Falcon Flex licensing model provide durable tailwinds. Strong free cash flow generation and a net cash position of $2.65B support continued investment without dilution.",
+  "bear_case_summary": "CrowdStrike trades at a steep premium with a 95x P/E ratio that leaves little room for execution missteps. The July 2024 global IT outage created lasting reputational damage and ongoing class action litigation with uncertain financial impact. Growing competition from Microsoft Defender and peers could pressure margins. The portfolio is already 100% tech-weighted, and adding CRWD amplifies sector concentration risk.",
+  "one_line_summary": "Buy CRWD at $370 with a $520 base target and $330 stop loss, offering a 3.75:1 risk-reward ratio driven by strong cybersecurity demand and platform expansion, though high valuation and outage litigation warrant a moderate position size."
+}

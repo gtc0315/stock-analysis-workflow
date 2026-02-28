@@ -1,0 +1,11 @@
+{
+  "key_conditions": [
+    "Hold only if March 4 earnings beat consensus on both revenue and ARR",
+    "Reduce position if stock breaks below $330 support level",
+    "Take partial profits if stock reaches $450 resistance zone",
+    "Exit if July 2024 outage litigation results in settlement exceeding $500M"
+  ],
+  "bull_case_summary": "CrowdStrike continues to dominate endpoint security with 33% revenue growth and expanding platform modules. Strong ARR momentum above $4B, federal zero-trust mandates, and the Falcon Flex licensing model drive upside to $520+ as the platform consolidation thesis plays out over 3-6 months.",
+  "bear_case_summary": "The July 2024 global IT outage overhang continues to weigh on new customer acquisition and could result in material litigation costs. At 95x trailing P/E, any deceleration in growth or competitive losses to Microsoft Defender and SentinelOne could trigger a sharp multiple compression to the $300-330 range.",
+  "one_line_summary": "Buy CRWD at $370 with a $520 base target and $330 stop loss, offering a 3.75:1 risk-reward ratio driven by strong cybersecurity demand and platform expansion, though high valuation and outage litigation warrant a moderate position size."
+}

@@ -1,0 +1,16 @@
+{
+  "ticker": "CRWD",
+  "recommendation": "buy",
+  "confidence": 0.72,
+  "entry_price": {
+    "ideal": 370.0,
+    "acceptable_range": [360.0, 385.0]
+  },
+  "target_price": {
+    "conservative": 430.0,
+    "base": 520.0,
+    "optimistic": 620.0
+  },
+  "stop_loss": 330.0,
+  "position_size_recommended_usd": 7500.0
+}

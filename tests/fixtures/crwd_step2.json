@@ -1,0 +1,42 @@
+{
+  "ticker": "CRWD",
+  "valuation": {
+    "assessment": "Expensive on traditional metrics but premium justified by growth trajectory and market leadership",
+    "evidence": [
+      "P/E ratio of 95.5x is significantly above the software sector median of ~35x",
+      "P/S ratio of 25.8x reflects premium pricing for a high-growth cybersecurity leader",
+      "Forward P/E of 72.3x indicates improving earnings trajectory but still elevated",
+      "Analyst consensus target of $420 implies ~13% upside, suggesting market sees further room"
+    ]
+  },
+  "growth": {
+    "assessment": "Strong revenue growth with accelerating profitability and expanding TAM",
+    "evidence": [
+      "Revenue growth of 33% YoY demonstrates continued strong demand for endpoint security",
+      "Earnings growth of 45% outpaces revenue growth, indicating operating leverage",
+      "ARR surpassed $4 billion in Q3 FY2025, a milestone reflecting durable recurring revenue",
+      "Net retention rate consistently above 120%, showing strong upsell within existing customers",
+      "Total addressable market expanding as CrowdStrike adds cloud security and identity modules"
+    ]
+  },
+  "moat": {
+    "assessment": "Wide moat driven by platform stickiness, network effects in threat intelligence, and switching costs",
+    "evidence": [
+      "Falcon platform consolidates 20+ security modules, creating high switching costs",
+      "Crowdsourced threat intelligence improves with each additional endpoint, creating network effects",
+      "Leader in Gartner Magic Quadrant for Endpoint Protection for multiple consecutive years",
+      "Largest pure-play cloud-native cybersecurity platform with over 29,000 subscription customers",
+      "Government certifications (FedRAMP, IL5) create significant barriers to entry in public sector"
+    ]
+  },
+  "balance_sheet": {
+    "assessment": "Healthy balance sheet with net cash position and strong free cash flow generation",
+    "evidence": [
+      "Total cash of $3.4B versus total debt of $750M provides a strong net cash position of $2.65B",
+      "Free cash flow of $930M represents a ~25% FCF margin, funding growth without dilution",
+      "Profit margins of 5% on a GAAP basis are turning positive, with non-GAAP margins much higher",
+      "Minimal debt-to-equity ratio compared to peers in enterprise software"
+    ]
+  },
+  "overall_fundamental_rating": "strong"
+}

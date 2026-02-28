@@ -1,0 +1,48 @@
+{
+  "analysis_summary": {
+    "ticker": "CRWD",
+    "model_used": "claude-sonnet-4-5-20250929",
+    "recommendation": "buy",
+    "confidence": 0.90,
+    "entry_price": 365.00,
+    "target_price_base": 550.00,
+    "stop_loss": 320.00,
+    "position_size_usd": 10000,
+    "risk_reward_ratio": 4.11
+  },
+  "risk_profile": {
+    "risk_tolerance": "moderate",
+    "time_horizon": "medium",
+    "position_size_usd": 15000,
+    "existing_holdings": ["PANW", "ZS", "HACK", "QQQ"]
+  },
+  "human_eval": {
+    "grader": "reference_grader",
+    "date": "2025-01-15",
+    "scores": {
+      "causal_reasoning": {
+        "score": 1,
+        "justification": "No evidence cited for any claim. States 'cybersecurity spending will explode in 2025' without referencing analyst estimates, enterprise survey data, or budget cycle indicators. Claims 'CRWD will capture the majority of incremental spending' with no basis — no discussion of win rates, competitive positioning data, or customer acquisition metrics. The target price of $550 (50.7% upside) appears fabricated — no DCF, comparable analysis, or revenue multiple framework is provided to support it. Asserts 'AI will be a massive revenue driver' without specifying which AI products, their TAM, or current adoption rates."
+      },
+      "information_completeness": {
+        "score": 2,
+        "justification": "Mentions that CRWD is a leader in endpoint security and has a growing platform. Correctly identifies the company's net retention rate as strong. However, completely ignores the July 2024 global IT outage caused by a faulty CrowdStrike update which is the single most material recent event for the stock. Omits discussion of the resulting customer trust erosion, lawsuit liabilities, and remediation costs. Does not cover competitive dynamics with SentinelOne, Palo Alto, or Microsoft Defender. Missing upcoming earnings date, recent management guidance changes, and federal contract pipeline status."
+      },
+      "actionability": {
+        "score": 2,
+        "justification": "Provides entry and target prices, but the $550 target is unsupported and reads as aspirational rather than analytical. The stop loss at $320 (12.3% downside) is stated without rationale — no reference to technical support levels, moving averages, or fundamental floor. Position size of $10,000 out of $15,000 portfolio (66.7%) is stated but flagged as problematic below. No scaling plan, no conditional entry criteria, no discussion of what would invalidate the thesis."
+      },
+      "risk_awareness": {
+        "score": 1,
+        "justification": "Risks are essentially absent. No mention of the July 2024 outage liability overhang whatsoever. No discussion of the high valuation (30+ forward P/S) creating downside risk if growth decelerates. No competitive displacement risk analysis. No mention of macro sensitivity — enterprise cybersecurity budgets can be cut or deferred in recession. The bear case section is one sentence: 'If the market corrects, CRWD could pull back temporarily.' This demonstrates no genuine engagement with downside scenarios."
+      },
+      "user_appropriateness": {
+        "score": 1,
+        "justification": "Catastrophic mismatch with user profile. Recommends allocating 66.7% of a $15k moderate-risk portfolio to a single high-multiple cybersecurity stock. Completely ignores that the user already holds PANW, ZS, and HACK — adding a $10k CRWD position would make the portfolio approximately 90%+ concentrated in cybersecurity. This creates extreme sector concentration risk that is fundamentally incompatible with a moderate risk tolerance. The analysis does not even acknowledge the existing holdings exist, let alone calculate the combined exposure."
+      }
+    },
+    "overall_weighted_average": 1.45,
+    "passed": false,
+    "notes": "No evidence cited for any major claim. Unrealistic 50%+ upside target with no supporting valuation framework. Most critically, ignores the July 2024 global IT outage — the single most important recent event for CrowdStrike — which raises serious questions about whether current information was even consulted. The 66.7% position size recommendation for a moderate investor who already holds three cybersecurity names (PANW, ZS, HACK) demonstrates a complete failure to consider portfolio context. This analysis would be actively harmful if followed."
+  }
+}

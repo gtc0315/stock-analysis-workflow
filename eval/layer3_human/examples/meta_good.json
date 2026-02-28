@@ -1,0 +1,48 @@
+{
+  "analysis_summary": {
+    "ticker": "META",
+    "model_used": "claude-sonnet-4-5-20250929",
+    "recommendation": "buy",
+    "confidence": 0.78,
+    "entry_price": 595.00,
+    "target_price_base": 700.00,
+    "stop_loss": 540.00,
+    "position_size_usd": 5000,
+    "risk_reward_ratio": 1.91
+  },
+  "risk_profile": {
+    "risk_tolerance": "moderate",
+    "time_horizon": "medium",
+    "position_size_usd": 20000,
+    "existing_holdings": ["VOO", "GOOGL", "AMZN"]
+  },
+  "human_eval": {
+    "grader": "reference_grader",
+    "date": "2025-01-15",
+    "scores": {
+      "causal_reasoning": {
+        "score": 4,
+        "justification": "Strong reasoning chain linking Reels monetization efficiency improvements (now at 75% of Feed/Stories per impression, up from 50% in 2023) to revenue acceleration. Correctly identifies the AI-driven recommendation engine as the mechanism improving engagement (+8% time spent YoY) and ad targeting post-ATT recovery. The connection between Reality Labs losses and long-term platform optionality is reasonably argued with historical parallels to AWS investment period. Minor gap: the claim that WhatsApp Business will generate $5B+ in revenue by 2026 lacks supporting evidence beyond management commentary."
+      },
+      "information_completeness": {
+        "score": 4,
+        "justification": "Covers Q3 2024 earnings beat, Reels monetization trajectory, AI capex ramp ($37-40B 2024 guidance), Reality Labs loss profile, regulatory landscape (EU DMA, FTC antitrust), and competitive positioning versus TikTok. Includes upcoming Q4 earnings date and key metrics to watch. Provides detailed bull case (advertising efficiency gains, AI assistant distribution, WhatsApp monetization) and bear case (capex efficiency concerns, regulatory action, Threads failing to monetize). One gap: limited discussion of Instagram's competitive position among Gen Z users and potential share loss to newer platforms."
+      },
+      "actionability": {
+        "score": 4,
+        "justification": "Clear entry at $595 with stop loss at $540 (9.2% downside) anchored to the 100-day moving average. Target of $700 based on 25x forward earnings applied to 2025 EPS estimate of $28. Position size of $5,000 (25% of portfolio) is well-justified. Recommends entering 70% pre-earnings and holding 30% in reserve for post-earnings dip. Specifies revisiting thesis if Reality Labs losses exceed $5B/quarter or if daily active user growth turns negative. Nearly fully actionable — only minor gap is no discussion of tax-lot optimization for the scaling strategy."
+      },
+      "risk_awareness": {
+        "score": 5,
+        "justification": "Exemplary risk coverage. Bear case is as detailed as bull case with quantified downside to $480 in pessimistic scenario. Identifies five distinct risk categories: (1) regulatory — EU DMA fines up to 10% of global revenue, FTC breakup risk assessed as low but nonzero, (2) capex efficiency — models scenario where AI investment ROI disappoints, (3) competitive — TikTok ban uncertainty cutting both ways, (4) macro — advertising revenue cyclicality with recession sensitivity analysis, (5) key-person — Zuckerberg's dual-class control and strategic pivots. Stop loss rationale explicitly tied to technical support and fundamental floor. Tail risk of coordinated global social media regulation is mentioned."
+      },
+      "user_appropriateness": {
+        "score": 4,
+        "justification": "25% allocation to META is appropriate for moderate risk profile. Correctly identifies meaningful overlap with VOO (META is ~2.5% of S&P 500) and notes that combined with GOOGL and AMZN holdings, the portfolio skews heavily toward mega-cap tech ad/commerce platforms. Suggests the investor consider this concentration and proposes reducing to 20% allocation if concerned. Time horizon matches the 6-12 month catalyst timeline. Could improve by more explicitly quantifying the total portfolio FAANG/mega-cap exposure and providing a rebalancing trigger."
+      }
+    },
+    "overall_weighted_average": 4.20,
+    "passed": true,
+    "notes": "Well-rounded analysis with particularly strong risk awareness — the five-category risk framework is thorough and each risk is quantified or bounded rather than just listed. The Reels monetization thesis is well-grounded in specific efficiency metrics. Portfolio overlap awareness is good but could be more quantitative. A model example of balanced analysis that gives the investor genuine decision-making tools."
+  }
+}

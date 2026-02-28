@@ -1,0 +1,48 @@
+{
+  "analysis_summary": {
+    "ticker": "TSLA",
+    "model_used": "claude-sonnet-4-5-20250929",
+    "recommendation": "buy",
+    "confidence": 0.70,
+    "entry_price": 345.00,
+    "target_price_base": 450.00,
+    "stop_loss": 280.00,
+    "position_size_usd": 2500,
+    "risk_reward_ratio": 1.62
+  },
+  "risk_profile": {
+    "risk_tolerance": "conservative",
+    "time_horizon": "short",
+    "position_size_usd": 5000,
+    "existing_holdings": ["BND", "VTI", "SCHD"]
+  },
+  "human_eval": {
+    "grader": "reference_grader",
+    "date": "2025-01-15",
+    "scores": {
+      "causal_reasoning": {
+        "score": 3,
+        "justification": "Claims robotaxi and Optimus robot will drive next leg of growth but provides no timeline, regulatory pathway, or revenue model for either. States 'FSD is approaching human-level driving' without citing disengagement data or regulatory approval status. The link between Cybertruck deliveries and margin improvement is asserted but not supported with unit economics. The energy storage segment growth claim is well-supported with Megapack deployment data, showing the analysis can reason well when it tries."
+      },
+      "information_completeness": {
+        "score": 3,
+        "justification": "Covers Q3 2024 delivery numbers, energy storage growth, and FSD progress. Mentions upcoming Q4 earnings date. However, completely omits the competitive threat from Chinese EV makers (BYD surpassing Tesla in global BEV sales), margin compression trend over the past 6 quarters, executive departures, and the impact of potential EV subsidy changes. The bear case is a single paragraph that reads as an afterthought rather than a genuine counter-argument."
+      },
+      "actionability": {
+        "score": 3,
+        "justification": "Entry price and target are specified, and position size is calculated. However, the stop loss at $280 represents an 18.8% drawdown which is problematic for a conservative investor with a short time horizon — no justification is given for why this level was chosen. No scaling strategy, no conditional triggers for entry, and no discussion of options strategies that might be more appropriate for limiting downside on a volatile name."
+      },
+      "risk_awareness": {
+        "score": 2,
+        "justification": "Risks are mentioned but immediately dismissed. States 'competition is increasing but Tesla's brand moat is durable' without evidence. Acknowledges margin pressure but attributes it entirely to 'strategic price cuts to gain market share' without questioning whether it reflects demand weakness. Does not discuss Elon Musk key-person risk, regulatory risk to autonomous driving claims, or the 80+ trailing P/E creating valuation fragility. The bear case scenario lacks a quantified downside target."
+      },
+      "user_appropriateness": {
+        "score": 3,
+        "justification": "Allocating 50% of a $5k conservative portfolio to TSLA at 80+ P/E is aggressive. The short time horizon is mismatched with the long-term catalysts cited (robotaxi, Optimus). The existing holdings (BND, VTI, SCHD) indicate a conservative dividend/bond investor — recommending a high-beta growth stock without acknowledging this tension shows incomplete profile consideration. The analysis does note the position size but fails to reconcile it with the risk tolerance."
+      }
+    },
+    "overall_weighted_average": 2.80,
+    "passed": false,
+    "notes": "One-sided bull case that leans heavily on speculative catalysts (robotaxi, Optimus) without grounding them in timelines or data. Stop loss too wide for a conservative investor on a short time horizon — an 18.8% drawdown on a $2,500 position is $470, nearly 10% of the total portfolio. The analysis needed to either recommend a much smaller position with tighter risk controls, suggest a hold/avoid given the risk profile mismatch, or propose a defined-risk options strategy instead."
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "ticker": "CRWD",
+  "catalysts": [
+    {
+      "event": "Q3 FY2025 earnings report expected to show continued ARR acceleration and margin expansion",
+      "expected_date": "2025-03-04",
+      "impact": "positive",
+      "magnitude": "high"
+    },
+    {
+      "event": "Federal zero-trust mandate deadlines driving accelerated government contract awards",
+      "expected_date": "2025-Q1",
+      "impact": "positive",
+      "magnitude": "medium"
+    },
+    {
+      "event": "Falcon Flex licensing model gaining traction, improving net retention rates",
+      "expected_date": null,
+      "impact": "positive",
+      "magnitude": "medium"
+    },
+    {
+      "event": "Potential inclusion in additional market indices as market cap and profitability thresholds are crossed",
+      "expected_date": "2025-H1",
+      "impact": "positive",
+      "magnitude": "low"
+    }
+  ],
+  "risks": [
+    {
+      "event": "Ongoing class action lawsuits from the July 2024 global IT outage could result in material financial settlements",
+      "expected_date": "2025-H1",
+      "impact": "negative",
+      "magnitude": "high"
+    },
+    {
+      "event": "Elevated valuation leaves stock vulnerable to multiple compression if growth decelerates",
+      "expected_date": null,
+      "impact": "negative",
+      "magnitude": "high"
+    },
+    {
+      "event": "Increasing competition from Microsoft Defender, SentinelOne, and Palo Alto Networks in endpoint and cloud security",
+      "expected_date": null,
+      "impact": "negative",
+      "magnitude": "medium"
+    },
+    {
+      "event": "Customer trust erosion from the July 2024 outage could slow new logo acquisition in risk-averse industries",
+      "expected_date": null,
+      "impact": "negative",
+      "magnitude": "medium"
+    },
+    {
+      "event": "Potential reduction in IT security budgets during an economic slowdown",
+      "expected_date": null,
+      "impact": "negative",
+      "magnitude": "low"
+    }
+  ],
+  "correlation_with_holdings": "High correlation with existing holdings. CRWD is a technology stock in the cybersecurity sub-sector. The existing portfolio (NVDA, AAPL, TSLA) is 100% technology-weighted. Adding CRWD would further increase technology sector concentration, exposing the portfolio to correlated drawdowns during tech selloffs or rising interest rate environments.",
+  "concentration_risk_flag": true
+}

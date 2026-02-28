@@ -1,0 +1,24 @@
+providers:
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+    default_model: claude-sonnet-4-5-20250929
+  openai:
+    api_key_env: OPENAI_API_KEY
+    default_model: gpt-4o
+  ollama:
+    base_url: http://localhost:11434
+    default_model: llama3.1:8b
+
+workflow:
+  provider: ollama  # which provider to use for analysis
+  parallel: true      # ThreadPoolExecutor for independent workers
+  max_workers: 4      # max concurrent LLM calls
+
+eval:
+  judge_provider: ollama  # MUST be different from workflow provider
+  judge_models:           # Pool of judge models (each scores independently)
+    - llama3.1:8b
+    - qwen3:8b
+    - granite3.2:8b
+    - deepseek-r1:8b
+    - gemma2:9b

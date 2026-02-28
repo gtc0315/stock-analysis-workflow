@@ -1,0 +1,11 @@
+{
+  "ticker": "CRWD",
+  "current_trend": "uptrend",
+  "support_levels": [358.0, 340.0, 310.0],
+  "resistance_levels": [385.0, 398.0, 420.0],
+  "rsi": 58.3,
+  "rsi_signal": "neutral",
+  "macd_direction": "bullish",
+  "volume_analysis": "Volume is slightly above the 50-day average at 4.2M shares, confirming the recent uptrend. Buying volume has exceeded selling volume on 7 of the last 10 trading sessions, suggesting institutional accumulation.",
+  "overall_technical_rating": "bullish"
+}

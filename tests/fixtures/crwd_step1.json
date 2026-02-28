@@ -1,0 +1,47 @@
+{
+  "ticker": "CRWD",
+  "current_price": 372.50,
+  "price_date": "2025-01-15T10:30:00",
+  "pe_ratio": 95.5,
+  "ps_ratio": 25.8,
+  "market_cap_billions": 89.5,
+  "week_52_high": 398.0,
+  "week_52_low": 200.81,
+  "beta": 1.15,
+  "short_interest_pct": 2.1,
+  "recent_news": [
+    {
+      "headline": "CrowdStrike reports Q3 FY2025 ARR surpassing $4 billion, beating estimates",
+      "date": "2025-01-10",
+      "sentiment": "positive"
+    },
+    {
+      "headline": "CrowdStrike expands Falcon platform with new cloud security modules",
+      "date": "2025-01-08",
+      "sentiment": "positive"
+    },
+    {
+      "headline": "July 2024 outage fallout continues: CrowdStrike faces class action lawsuits from affected businesses",
+      "date": "2025-01-05",
+      "sentiment": "negative"
+    },
+    {
+      "headline": "Analysts raise CrowdStrike price targets citing strong endpoint security demand",
+      "date": "2025-01-03",
+      "sentiment": "positive"
+    },
+    {
+      "headline": "Federal agencies accelerate zero-trust adoption, boosting cybersecurity vendors",
+      "date": "2024-12-28",
+      "sentiment": "positive"
+    }
+  ],
+  "next_earnings_date": "2025-03-04",
+  "analyst_consensus": {
+    "average_target_price": 420.0,
+    "buy_count": 38,
+    "hold_count": 8,
+    "sell_count": 1
+  },
+  "data_retrieval_timestamp": "2025-01-15T10:30:00"
+}

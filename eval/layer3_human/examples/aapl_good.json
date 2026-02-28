@@ -1,0 +1,48 @@
+{
+  "analysis_summary": {
+    "ticker": "AAPL",
+    "model_used": "claude-sonnet-4-5-20250929",
+    "recommendation": "buy",
+    "confidence": 0.75,
+    "entry_price": 228.50,
+    "target_price_base": 260.00,
+    "stop_loss": 210.00,
+    "position_size_usd": 3000,
+    "risk_reward_ratio": 1.7
+  },
+  "risk_profile": {
+    "risk_tolerance": "moderate",
+    "time_horizon": "medium",
+    "position_size_usd": 10000,
+    "existing_holdings": ["VOO", "QQQ", "MSFT"]
+  },
+  "human_eval": {
+    "grader": "reference_grader",
+    "date": "2025-01-15",
+    "scores": {
+      "causal_reasoning": {
+        "score": 4,
+        "justification": "Analysis correctly links iPhone 16 cycle strength to Services revenue acceleration, citing 2.2B active device installed base as the flywheel driver. Revenue growth projection of 8-10% is well-grounded in segment-level estimates. Minor gap: the reasoning connecting Vision Pro to long-term multiple expansion is speculative without sufficient adoption data to support it."
+      },
+      "information_completeness": {
+        "score": 5,
+        "justification": "Covers Q4 FY2024 earnings beat, iPhone 16 demand trends from supply chain checks, Services margin expansion to 74%, upcoming Q1 FY2025 earnings date (Jan 30), China regulatory risks, DOJ antitrust case timeline, and macro sensitivity to consumer spending. Both bull and bear cases are thoroughly presented with specific catalysts and dates."
+      },
+      "actionability": {
+        "score": 4,
+        "justification": "Provides specific entry at $228.50 with a stop loss at $210 (8.1% downside) and base target of $260 (13.8% upside). Position sizing of $3,000 within a $10k portfolio is clearly stated. Suggests scaling in with 60% now and 40% on a pullback to $220. Minor gap: does not specify exact conditions for exiting the remaining 40% if the pullback never materializes."
+      },
+      "risk_awareness": {
+        "score": 4,
+        "justification": "Identifies China revenue concentration (19% of total), FX headwinds from strong dollar, DOJ antitrust risk to App Store economics, and potential iPhone cycle peaking in Q2. Quantifies downside scenario at $195 in bear case. Good but does not address tail risk of broader tech multiple compression in a rising rate environment."
+      },
+      "user_appropriateness": {
+        "score": 5,
+        "justification": "30% allocation to a single name is appropriate for moderate risk tolerance. AAPL's low beta (1.2) and dividend yield align with moderate profile. Correctly notes overlap with QQQ holding (AAPL is ~9% of QQQ) and adjusts effective exposure calculation. Time horizon of medium-term matches the 6-12 month catalyst timeline laid out in the analysis."
+      }
+    },
+    "overall_weighted_average": 4.35,
+    "passed": true,
+    "notes": "Strong analysis that demonstrates what a well-calibrated moderate-risk recommendation looks like. The entry/exit framework is clear and the overlap awareness with existing QQQ position shows attention to portfolio-level thinking. Could be improved with more explicit discussion of macro tail risks."
+  }
+}
