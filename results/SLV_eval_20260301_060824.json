@@ -1,0 +1,560 @@
+{
+  "ticker": "SLV",
+  "model_name": "claude-opus-4-6",
+  "timestamp": "2026-03-01T06:08:24.319835",
+  "layer1": {
+    "passed": true,
+    "checks": {
+      "required_fields_present": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "recommendation_valid": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "position_size_pct_math": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "risk_reward_math": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "price_ordering": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "entry_range_valid": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "confidence_bounds": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "stop_loss_below_entry": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "target_within_200pct": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "entry_near_current_price": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "position_size_within_budget": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "has_recent_news": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "aggressive_has_stop_loss": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "exit_strategy_present": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "exit_strategy_stop_first": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "exit_strategy_ascending": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "exit_strategy_closes": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "time_horizon_matches": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "min_catalysts": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "min_risks": {
+        "passed": true,
+        "reason": "OK"
+      },
+      "min_key_conditions": {
+        "passed": true,
+        "reason": "OK"
+      }
+    },
+    "total_checks": 21,
+    "passed_checks": 21
+  },
+  "layer2": {
+    "causal_reasoning": {
+      "score": 3,
+      "justification": null,
+      "sub_items": {
+        "metrics_cited": {
+          "met": true,
+          "note": "RSI 31.2, MACD bearish, NAV premium 8.5%, beta 2.08 cited"
+        },
+        "technical_alignment": {
+          "met": false,
+          "note": "Base target $102.41 sits 7.2% above nearest resistance $95.00"
+        },
+        "recommendation_follows_evidence": {
+          "met": false,
+          "note": "HOLD at 45% confidence with oversold RSI, bearish MACD creates unresolved tension"
+        },
+        "confidence_calibrated": {
+          "met": false,
+          "note": "45% confidence below threshold yet $9K position initiated"
+        },
+        "counterarguments_present": {
+          "met": true,
+          "note": "Bear case addresses mean reversion, demand contraction, rates, volatility"
+        }
+      }
+    },
+    "information_completeness": {
+      "score": 4,
+      "justification": null,
+      "sub_items": {
+        "news_substantive": {
+          "met": true,
+          "note": "Five dated news items covering rebound and plunge"
+        },
+        "earnings_discussed": {
+          "met": false,
+          "note": "Earnings null but no discussion of ETF distribution schedules"
+        },
+        "analyst_consensus_interpreted": {
+          "met": false,
+          "note": "33% bullish presented as raw data with no interpretation"
+        },
+        "catalyst_variety": {
+          "met": true,
+          "note": "Macro, supply, and technology demand categories"
+        },
+        "risk_variety": {
+          "met": true,
+          "note": "Valuation, demand, macro, and volatility categories"
+        },
+        "bull_bear_balanced": {
+          "met": true,
+          "note": "Both cases substantive with specific targets and catalysts"
+        }
+      }
+    },
+    "actionability": {
+      "score": 4,
+      "justification": null,
+      "sub_items": {
+        "entry_range_justified": {
+          "met": true,
+          "note": "Clear entry band at current price"
+        },
+        "targets_tiered_and_realistic": {
+          "met": false,
+          "note": "Base target not anchored to identifiable resistance"
+        },
+        "stop_loss_technical_basis": {
+          "met": true,
+          "note": "Stop at $80.26 support level"
+        },
+        "conditions_measurable": {
+          "met": true,
+          "note": "4 conditions with specific triggers"
+        },
+        "summary_standalone": {
+          "met": true,
+          "note": "One-liner captures position, stop, and catalysts"
+        }
+      }
+    },
+    "risk_awareness": {
+      "score": 4,
+      "justification": null,
+      "sub_items": {
+        "diverse_risk_categories": {
+          "met": true,
+          "note": "4 risk categories"
+        },
+        "bear_case_detailed": {
+          "met": true,
+          "note": "Specific support levels and drawdown percentages"
+        },
+        "stop_loss_explained": {
+          "met": true,
+          "note": "100% exit at technical support"
+        },
+        "portfolio_impact_discussed": {
+          "met": false,
+          "note": "Correlation NOT PROVIDED"
+        },
+        "downside_scenario_quantified": {
+          "met": true,
+          "note": "5.6% and 11-13% quantified"
+        }
+      }
+    },
+    "user_appropriateness": {
+      "score": 2,
+      "justification": null,
+      "sub_items": {
+        "position_size_appropriate": {
+          "met": false,
+          "note": "45% at sub-50% conviction problematic"
+        },
+        "time_horizon_matched": {
+          "met": false,
+          "note": "Short horizon but Q2 catalyst may extend beyond"
+        },
+        "holdings_correlation_noted": {
+          "met": false,
+          "note": "No correlation analysis"
+        },
+        "tone_matches_profile": {
+          "met": true,
+          "note": "Aggressive profile reflected in approach"
+        }
+      }
+    },
+    "overall_weighted_average": 3.55,
+    "passed": false,
+    "judge_model": "claude-sonnet-4-6"
+  },
+  "layer2_pool": {
+    "individual_results": [
+      {
+        "causal_reasoning": {
+          "score": 3,
+          "justification": null,
+          "sub_items": {
+            "metrics_cited": {
+              "met": true,
+              "note": "RSI 31.2, MACD bearish, NAV premium 8.5%, beta 2.08 cited"
+            },
+            "technical_alignment": {
+              "met": false,
+              "note": "Base target $102.41 sits 7.2% above nearest resistance $95.00"
+            },
+            "recommendation_follows_evidence": {
+              "met": false,
+              "note": "HOLD at 45% confidence with oversold RSI, bearish MACD creates unresolved tension"
+            },
+            "confidence_calibrated": {
+              "met": false,
+              "note": "45% confidence below threshold yet $9K position initiated"
+            },
+            "counterarguments_present": {
+              "met": true,
+              "note": "Bear case addresses mean reversion, demand contraction, rates, volatility"
+            }
+          }
+        },
+        "information_completeness": {
+          "score": 4,
+          "justification": null,
+          "sub_items": {
+            "news_substantive": {
+              "met": true,
+              "note": "Five dated news items covering rebound and plunge"
+            },
+            "earnings_discussed": {
+              "met": false,
+              "note": "Earnings null but no discussion of ETF distribution schedules"
+            },
+            "analyst_consensus_interpreted": {
+              "met": false,
+              "note": "33% bullish presented as raw data with no interpretation"
+            },
+            "catalyst_variety": {
+              "met": true,
+              "note": "Macro, supply, and technology demand categories"
+            },
+            "risk_variety": {
+              "met": true,
+              "note": "Valuation, demand, macro, and volatility categories"
+            },
+            "bull_bear_balanced": {
+              "met": true,
+              "note": "Both cases substantive with specific targets and catalysts"
+            }
+          }
+        },
+        "actionability": {
+          "score": 4,
+          "justification": null,
+          "sub_items": {
+            "entry_range_justified": {
+              "met": true,
+              "note": "Clear entry band at current price"
+            },
+            "targets_tiered_and_realistic": {
+              "met": false,
+              "note": "Base target not anchored to identifiable resistance"
+            },
+            "stop_loss_technical_basis": {
+              "met": true,
+              "note": "Stop at $80.26 support level"
+            },
+            "conditions_measurable": {
+              "met": true,
+              "note": "4 conditions with specific triggers"
+            },
+            "summary_standalone": {
+              "met": true,
+              "note": "One-liner captures position, stop, and catalysts"
+            }
+          }
+        },
+        "risk_awareness": {
+          "score": 4,
+          "justification": null,
+          "sub_items": {
+            "diverse_risk_categories": {
+              "met": true,
+              "note": "4 risk categories"
+            },
+            "bear_case_detailed": {
+              "met": true,
+              "note": "Specific support levels and drawdown percentages"
+            },
+            "stop_loss_explained": {
+              "met": true,
+              "note": "100% exit at technical support"
+            },
+            "portfolio_impact_discussed": {
+              "met": false,
+              "note": "Correlation NOT PROVIDED"
+            },
+            "downside_scenario_quantified": {
+              "met": true,
+              "note": "5.6% and 11-13% quantified"
+            }
+          }
+        },
+        "user_appropriateness": {
+          "score": 2,
+          "justification": null,
+          "sub_items": {
+            "position_size_appropriate": {
+              "met": false,
+              "note": "45% at sub-50% conviction problematic"
+            },
+            "time_horizon_matched": {
+              "met": false,
+              "note": "Short horizon but Q2 catalyst may extend beyond"
+            },
+            "holdings_correlation_noted": {
+              "met": false,
+              "note": "No correlation analysis"
+            },
+            "tone_matches_profile": {
+              "met": true,
+              "note": "Aggressive profile reflected in approach"
+            }
+          }
+        },
+        "overall_weighted_average": 3.55,
+        "passed": false,
+        "judge_model": "claude-sonnet-4-6"
+      },
+      {
+        "causal_reasoning": {
+          "score": 5,
+          "justification": null,
+          "sub_items": {
+            "metrics_cited": {
+              "met": true,
+              "note": "NAV premium 8.5%, RSI 31.2, beta 2.08, and percentage returns cited"
+            },
+            "technical_alignment": {
+              "met": true,
+              "note": "Neutral rating with consolidation trend aligns with mixed RSI oversold + bearish MACD signals"
+            },
+            "recommendation_follows_evidence": {
+              "met": true,
+              "note": "HOLD at low confidence logically follows mixed signals: moderate fundamentals, neutral technicals, oversold but bearish"
+            },
+            "confidence_calibrated": {
+              "met": true,
+              "note": "0.45 confidence appropriate for mixed evidence: bearish MACD + oversold RSI + moderate fundamentals"
+            },
+            "counterarguments_present": {
+              "met": true,
+              "note": "Mean reversion, demand contraction, and rising rates explicitly acknowledged as counterarguments"
+            }
+          }
+        },
+        "information_completeness": {
+          "score": 4,
+          "justification": null,
+          "sub_items": {
+            "news_substantive": {
+              "met": true,
+              "note": "5 dated headlines from Jan-Feb 2026 covering silver movements"
+            },
+            "earnings_discussed": {
+              "met": true,
+              "note": "Auto-pass: next_earnings_date is null/not available in source data"
+            },
+            "analyst_consensus_interpreted": {
+              "met": false,
+              "note": "Raw 5/8/2 counts shown but no interpretation of what majority-hold implies"
+            },
+            "catalyst_variety": {
+              "met": true,
+              "note": "Fed policy (macro) + EU solar/AI demand (industrial) + supply deficit = 3 categories"
+            },
+            "risk_variety": {
+              "met": true,
+              "note": "Mean reversion (valuation) + demand contraction + macro rates + beta volatility = 3+ categories"
+            },
+            "bull_bear_balanced": {
+              "met": true,
+              "note": "Bull: 2 sentences with catalysts and target. Bear: 3 sentences with support levels and drawdown"
+            }
+          }
+        },
+        "actionability": {
+          "score": 5,
+          "justification": null,
+          "sub_items": {
+            "entry_range_justified": {
+              "met": true,
+              "note": "Entry at current $84.99 with $84.14-$85.84 range, directly market-linked"
+            },
+            "targets_tiered_and_realistic": {
+              "met": true,
+              "note": "Conservative $95 (+12%), Base $102.41 (+20.5%), Optimistic $109.83 (+29%) reasonable for volatile commodity ETF"
+            },
+            "stop_loss_technical_basis": {
+              "met": true,
+              "note": "Stop at $80.26 = exact support level (200-day SMA), 0% gap"
+            },
+            "conditions_measurable": {
+              "met": true,
+              "note": "Price levels ($80.26), dates (Q2 2026), metrics (50-day MA, NAV 12%, PMI 48)"
+            },
+            "summary_standalone": {
+              "met": true,
+              "note": "Contains SLV, hold direction, $12K size, $80.26 stop, and catalysts"
+            }
+          }
+        },
+        "risk_awareness": {
+          "score": 4,
+          "justification": null,
+          "sub_items": {
+            "diverse_risk_categories": {
+              "met": true,
+              "note": "Valuation, macro, demand-side, volatility = 4 categories"
+            },
+            "bear_case_detailed": {
+              "met": true,
+              "note": "Specific: $80.26 support break, $73-75 target, 11-13% drawdown quantified"
+            },
+            "stop_loss_explained": {
+              "met": true,
+              "note": "At 200-day SMA, explained as technical support with 4.6% loss cap"
+            },
+            "portfolio_impact_discussed": {
+              "met": false,
+              "note": "No general diversification or allocation discussion for empty portfolio"
+            },
+            "downside_scenario_quantified": {
+              "met": true,
+              "note": "4.6% to stop, 11-13% extended bear case"
+            }
+          }
+        },
+        "user_appropriateness": {
+          "score": 5,
+          "justification": null,
+          "sub_items": {
+            "position_size_appropriate": {
+              "met": true,
+              "note": "$9K = 45% of $20K, well within aggressive 100% cap"
+            },
+            "time_horizon_matched": {
+              "met": true,
+              "note": "Short-horizon targets: 12-29% moves plausible for 2.08-beta silver ETF over weeks/months"
+            },
+            "holdings_correlation_noted": {
+              "met": true,
+              "note": "Auto-pass: no existing holdings to correlate against"
+            },
+            "tone_matches_profile": {
+              "met": true,
+              "note": "Recommending hold (not avoid) on volatile asset matches aggressive profile"
+            }
+          }
+        },
+        "overall_weighted_average": 4.55,
+        "passed": true,
+        "judge_model": "claude-haiku-4-5"
+      }
+    ],
+    "judge_models": [
+      "claude-sonnet-4-6",
+      "claude-haiku-4-5"
+    ],
+    "num_judges": 2,
+    "num_succeeded": 2,
+    "causal_reasoning": {
+      "mean_score": 4.0,
+      "min_score": 3,
+      "max_score": 5,
+      "scores": [
+        3,
+        5
+      ]
+    },
+    "information_completeness": {
+      "mean_score": 4.0,
+      "min_score": 4,
+      "max_score": 4,
+      "scores": [
+        4,
+        4
+      ]
+    },
+    "actionability": {
+      "mean_score": 4.5,
+      "min_score": 4,
+      "max_score": 5,
+      "scores": [
+        4,
+        5
+      ]
+    },
+    "risk_awareness": {
+      "mean_score": 4.0,
+      "min_score": 4,
+      "max_score": 4,
+      "scores": [
+        4,
+        4
+      ]
+    },
+    "user_appropriateness": {
+      "mean_score": 3.5,
+      "min_score": 2,
+      "max_score": 5,
+      "scores": [
+        2,
+        5
+      ]
+    },
+    "overall_weighted_average": 4.05,
+    "passed": true,
+    "score_spread": 1.0
+  },
+  "overall_passed": true
+}
