@@ -11,14 +11,34 @@ Does **{{ticker}}** ({{company_name}}) have a strong competitive moat?
 
 Consider: pricing power, switching costs, network effects, brand, patents, regulatory barriers.
 
+## Your Task
+
+Write 1-2 sentences on competitive advantages. Be SPECIFIC about what type of moat exists.
+
+Good example:
+```
+{
+  "assessment": "Strong wide moat from high switching costs and 75.2% gross margins, indicating significant pricing power in the cybersecurity market.",
+  "evidence": ["Profit margins of 75.2% suggest strong pricing power", "High switching costs: enterprise security platforms are deeply integrated"]
+}
+```
+
+Bad example (too vague — do NOT write this):
+```
+{
+  "assessment": "The company has some competitive advantages.",
+  "evidence": ["Good market position", "Known brand"]
+}
+```
+
 ## Output
 
 Respond with ONLY a JSON object:
 
 ```
 {
-  "assessment": "1-2 sentence summary of competitive advantages",
-  "evidence": ["data point 1", "data point 2"]
+  "assessment": "1-2 sentences naming specific moat types and citing margins/growth",
+  "evidence": ["specific advantage with supporting data", "specific advantage with supporting data"]
 }
 ```
 

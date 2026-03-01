@@ -181,6 +181,21 @@ class RecommendationOutput(BaseModel):
 
 
 # Step 5b: LLM writes narrative fields (no math)
+# Split into 3 focused schemas for 8B model reliability (one question per call)
+class BullCaseOutput(BaseModel):
+    """Step 5b-1 output: bull case narrative only."""
+    bull_case_summary: str = Field(min_length=10)
+
+class BearCaseOutput(BaseModel):
+    """Step 5b-2 output: bear case with quantified downside."""
+    bear_case_summary: str = Field(min_length=10)
+
+class ConditionsSummaryOutput(BaseModel):
+    """Step 5b-3 output: conditions and one-liner."""
+    key_conditions: list[str] = Field(min_length=1)
+    one_line_summary: str = Field(min_length=10)
+
+# Legacy combined schema (still used for backward compat / assembly)
 class NarrativeOutput(BaseModel):
     """Step 5b output: conditions, summaries, and narratives."""
     key_conditions: list[str] = Field(min_length=1)

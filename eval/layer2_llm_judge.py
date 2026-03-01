@@ -414,6 +414,17 @@ def run_layer2(
     # Normalize response to handle common small-model quirks
     normalized = _normalize_sub_item_response(raw_result)
 
+    # Auto-pass earnings_discussed when next_earnings_date is null (ETFs, etc.)
+    # The rubric says this should auto-pass, but 8B judges don't always follow it.
+    # Enforce deterministically so ETFs like SLV aren't penalized for missing earnings.
+    if not result.step1_data.next_earnings_date:
+        ic = normalized.get("information_completeness", {})
+        if "earnings_discussed" in ic:
+            ic["earnings_discussed"] = {
+                "met": True,
+                "note": "Auto-pass: next_earnings_date is null (ETF or no earnings data)",
+            }
+
     # Parse sub-items and compute scores deterministically
     dimension_scores = {}
     for dim_name, item_names in DIMENSION_SUB_ITEMS.items():

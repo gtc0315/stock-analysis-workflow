@@ -13,15 +13,35 @@ Is **{{ticker}}** cheap, fair, or expensive relative to its sector peers?
 - 52-Week Low: ${{week_52_low}}
 - Sector: {{sector}}
 
+## Your Task
+
+Write 1-2 sentences assessing valuation. You MUST cite specific numbers from the data above.
+
+Good example:
+```
+{
+  "assessment": "Trading at a P/E of 28.3x vs the Technology sector average of ~22x, slightly premium but justified by forward P/E of 19.5x.",
+  "evidence": ["Trailing P/E of 28.3x vs sector avg ~22x", "Forward P/E of 19.5x implies earnings catch-up", "At 87% of 52-week high ($210 vs $241)"]
+}
+```
+
+Bad example (too vague — do NOT write this):
+```
+{
+  "assessment": "The stock appears fairly valued.",
+  "evidence": ["Reasonable valuation", "In line with peers"]
+}
+```
+
 ## Output
 
 Respond with ONLY a JSON object:
 
 ```
 {
-  "assessment": "1-2 sentence summary of valuation",
-  "evidence": ["data point 1", "data point 2", "data point 3"]
+  "assessment": "1-2 sentences citing specific metrics from the data",
+  "evidence": ["metric: value (with comparison)", "metric: value", "metric: value"]
 }
 ```
 
-IMPORTANT: Each evidence item must be a plain text STRING, not an object.
+IMPORTANT: Each evidence item must be a plain text STRING with a specific number, not an object.

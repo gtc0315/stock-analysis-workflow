@@ -33,8 +33,11 @@ from adapters import AnthropicAdapter, OllamaAdapter, OpenAIAdapter
 from workflow.schema import (
     AnalysisResult,
     AnalystWorkerOutput,
+    BearCaseOutput,
+    BullCaseOutput,
     CatalystRiskOutput,
     CatalystWorkerOutput,
+    ConditionsSummaryOutput,
     DataGatheringOutput,
     DecisionOutput,
     DimensionWorkerOutput,
@@ -55,6 +58,17 @@ logger = logging.getLogger(__name__)
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 RESULTS_DIR = PROJECT_ROOT / "results"
 MOCK_DIR = PROJECT_ROOT / "tests" / "fixtures"
+
+# Mapping of judge sub-items to the Phase 1-3 workers responsible for data quality.
+# Sub-items NOT in this map are Phase 4 issues (handled by _build_feedback_brief).
+# When a sub-item here fails, the corresponding worker(s) are re-run with feedback.
+WORKER_FEEDBACK_MAP: dict[str, list[str]] = {
+    "metrics_cited": ["2a_valuation", "2b_growth", "2c_moat", "2d_balance"],
+    "news_substantive": ["1a_news"],
+    "catalyst_variety": ["3b_catalysts"],
+    "risk_variety": ["3c_risks"],
+    "diverse_risk_categories": ["3c_risks"],
+}
 
 
 # ── Config & Adapter ──────────────────────────────────────────────────────────
@@ -274,6 +288,8 @@ def _normalize_output(data: dict, schema_class) -> dict:
         TechInterpretationOutput: _normalize_tech_interpretation,
         CatalystWorkerOutput: _normalize_catalyst_worker,
         RiskWorkerOutput: _normalize_risk_worker,
+        # Split narrative schemas
+        ConditionsSummaryOutput: _normalize_conditions_summary,
     }
 
     normalizer = normalizers.get(schema_class)
@@ -658,6 +674,244 @@ def _normalize_risk_worker(data: dict) -> dict:
         {"event": "Market risk", "impact": "negative", "magnitude": "medium"}
     ]
     return data
+
+
+def _normalize_conditions_summary(data: dict) -> dict:
+    """Normalize Step 5b-3 output (conditions + one-liner)."""
+    conds = data.get("key_conditions", [])
+    if isinstance(conds, str):
+        conds = [conds]
+    elif not isinstance(conds, list):
+        conds = ["Hold position as recommended"]
+    data["key_conditions"] = conds if conds else ["Hold position as recommended"]
+    data.setdefault("one_line_summary", "See analysis for details.")
+    return data
+
+
+# ── Pre-Computed Facts for Phase 4b ──────────────────────────────────────
+
+
+def _compute_phase4b_facts(
+    step5a_result: dict,
+    step1_result: dict,
+    step2_result: dict,
+    step3_result: dict,
+    step4_result: dict,
+    price_zones: dict,
+    risk_profile: RiskProfile,
+) -> dict:
+    """Pre-compute facts that 8B models must cite in narratives.
+
+    Instead of asking the model to reason about technical bases, we compute
+    them deterministically and inject them into the prompt so the model can
+    just parrot the facts. This solves persistent judge failures like
+    stop_loss_technical_basis, stop_loss_explained, and analyst_consensus_interpreted.
+    """
+    entry = step5a_result.get("entry_price", {}).get("ideal", 0)
+    stop = step5a_result.get("stop_loss", 0)
+    targets = step5a_result.get("target_price", {})
+    position_size = step5a_result.get("position_size_recommended_usd", 0)
+
+    # --- Stop loss technical basis ---
+    # Look up the stop price in price_zones to find its label (e.g., "50-day SMA")
+    stop_technical_basis = "technical support level"
+    stop_zones = price_zones.get("stop_zone", [])
+    for zone_price, zone_label in stop_zones:
+        if abs(zone_price - stop) / max(stop, 0.01) < 0.03:  # within 3%
+            stop_technical_basis = zone_label
+            break
+
+    # --- Next support below stop ---
+    next_support_below = "none identified"
+    for zone_price, zone_label in stop_zones:
+        if zone_price < stop * 0.97:  # at least 3% below stop
+            next_support_below = f"${zone_price:.2f} ({zone_label})"
+            break
+
+    # --- Downside calculations ---
+    downside_pct = 0.0
+    downside_dollars = 0.0
+    if entry > 0 and stop > 0:
+        downside_pct = round((entry - stop) / entry * 100, 1)
+        if position_size > 0:
+            shares = position_size / entry if entry > 0 else 0
+            downside_dollars = round(shares * (entry - stop), 0)
+
+    # --- Target upside ---
+    target_base = targets.get("base", entry)
+    target_optimistic = targets.get("optimistic", target_base)
+    target_upside_pct = round((target_base - entry) / max(entry, 0.01) * 100, 1) if entry > 0 else 0
+
+    # --- Analyst consensus interpretation ---
+    ac = step1_result.get("analyst_consensus")
+    if ac and isinstance(ac, dict):
+        buy = ac.get("buy_count", 0)
+        hold = ac.get("hold_count", 0)
+        sell = ac.get("sell_count", 0)
+        total = buy + hold + sell
+        avg_target = ac.get("average_target_price")
+
+        if total > 0:
+            buy_pct = round(buy / total * 100)
+            if buy_pct >= 70:
+                skew = "strongly bullish"
+            elif buy_pct >= 50:
+                skew = "moderately bullish"
+            elif buy_pct >= 30:
+                skew = "mixed"
+            else:
+                skew = "cautious/bearish"
+
+            current_price = step1_result.get("current_price", 0)
+            target_vs_current = ""
+            if avg_target and current_price > 0:
+                delta = round((avg_target - current_price) / current_price * 100, 1)
+                target_vs_current = f", avg target ${avg_target:.2f} ({delta:+.1f}% vs current)"
+
+            analyst_consensus_interpretation = (
+                f"{buy} buy / {hold} hold / {sell} sell = {buy_pct}% bullish ({skew})"
+                f"{target_vs_current}"
+            )
+        else:
+            analyst_consensus_interpretation = "No analyst ratings available"
+    else:
+        analyst_consensus_interpretation = "No analyst consensus data"
+
+    # --- Catalyst summary (short) ---
+    catalyst_list = step4_result.get("catalysts", [])
+    catalyst_summary = "; ".join(
+        c.get("event", "")[:60] for c in catalyst_list[:3]
+    ) if catalyst_list else "None identified"
+
+    # --- Risk summary (short) ---
+    risk_list = step4_result.get("risks", [])
+    risk_summary = "; ".join(
+        r.get("event", "")[:60] for r in risk_list[:3]
+    ) if risk_list else "None identified"
+
+    return {
+        "stop_technical_basis": stop_technical_basis,
+        "next_support_below": next_support_below,
+        "downside_pct": downside_pct,
+        "downside_dollars": int(downside_dollars),
+        "target_upside_pct": target_upside_pct,
+        "target_optimistic": f"{target_optimistic:.2f}" if target_optimistic else "N/A",
+        "analyst_consensus_interpretation": analyst_consensus_interpretation,
+        "catalyst_summary": catalyst_summary,
+        "risk_summary": risk_summary,
+    }
+
+
+# ── Split Narrative Calls (Step 5b) ─────────────────────────────────────
+
+
+def _run_narrative_calls(
+    adapter,
+    system_prompt: str,
+    step5a_result: dict,
+    step1_result: dict,
+    step2_result: dict,
+    step3_result: dict,
+    step4_result: dict,
+    price_zones: dict,
+    risk_profile: RiskProfile,
+    step_prefix: str = "Phase 4b",
+    feedback_brief: str = "",
+) -> tuple[dict, dict]:
+    """Run 3 focused narrative calls (bull, bear, conditions) instead of 1 big call.
+
+    Each call has 1-2 output fields and pre-computed facts injected, making them
+    reliable on 8B models. Results are merged into a NarrativeOutput-compatible dict.
+
+    Returns: (narrative_dict, stats_dict)
+    """
+    facts = _compute_phase4b_facts(
+        step5a_result, step1_result, step2_result, step3_result,
+        step4_result, price_zones, risk_profile,
+    )
+
+    ticker = step5a_result.get("ticker", step1_result.get("ticker", "???"))
+    recommendation = step5a_result.get("recommendation", "hold")
+    confidence = str(step5a_result.get("confidence", 0.5))
+    entry_price = str(step5a_result.get("entry_price", {}).get("ideal", 0))
+    target_base = str(step5a_result.get("target_price", {}).get("base", 0))
+    stop_loss = str(step5a_result.get("stop_loss", 0))
+    position_size = str(step5a_result.get("position_size_recommended_usd", 0))
+
+    stats = {}
+
+    # --- 5b-1: Bull case ---
+    logger.info(f"  [{step_prefix}] Bull case...")
+    bull_prompt = _fill_prompt(
+        load_prompt("step5b_bull.md"),
+        ticker=ticker,
+        recommendation=recommendation,
+        confidence=confidence,
+        fundamental_rating=step2_result.get("overall_fundamental_rating", "unknown"),
+        technical_rating=step3_result.get("overall_technical_rating", "unknown"),
+        current_trend=step3_result.get("current_trend", "unknown"),
+        catalyst_summary=facts["catalyst_summary"],
+        analyst_consensus_interpretation=facts["analyst_consensus_interpretation"],
+        entry_price=entry_price,
+        target_base=target_base,
+        target_upside_pct=str(facts["target_upside_pct"]),
+        target_optimistic=facts["target_optimistic"],
+    )
+    if feedback_brief:
+        bull_prompt += f"\n\n{feedback_brief}"
+    bull_result = run_step(adapter, system_prompt, bull_prompt, BullCaseOutput, f"{step_prefix}-bull")
+    stats["4b_bull"] = adapter.last_usage.copy()
+
+    # --- 5b-2: Bear case ---
+    logger.info(f"  [{step_prefix}] Bear case...")
+    bear_prompt = _fill_prompt(
+        load_prompt("step5b_bear.md"),
+        ticker=ticker,
+        recommendation=recommendation,
+        risk_summary=facts["risk_summary"],
+        concentration_risk=str(step4_result.get("concentration_risk_flag", False)),
+        existing_holdings=", ".join(risk_profile.existing_holdings) if risk_profile.existing_holdings else "None",
+        stop_loss=stop_loss,
+        stop_technical_basis=facts["stop_technical_basis"],
+        downside_pct=str(facts["downside_pct"]),
+        downside_dollars=str(facts["downside_dollars"]),
+        position_size=position_size,
+        next_support_below=facts["next_support_below"],
+    )
+    if feedback_brief:
+        bear_prompt += f"\n\n{feedback_brief}"
+    bear_result = run_step(adapter, system_prompt, bear_prompt, BearCaseOutput, f"{step_prefix}-bear")
+    stats["4b_bear"] = adapter.last_usage.copy()
+
+    # --- 5b-3: Conditions & summary ---
+    logger.info(f"  [{step_prefix}] Conditions & summary...")
+    cond_prompt = _fill_prompt(
+        load_prompt("step5b_conditions.md"),
+        ticker=ticker,
+        recommendation=recommendation,
+        entry_price=entry_price,
+        target_base=target_base,
+        stop_loss=stop_loss,
+        stop_technical_basis=facts["stop_technical_basis"],
+        time_horizon=risk_profile.time_horizon,
+        catalyst_summary=facts["catalyst_summary"],
+        risk_summary=facts["risk_summary"],
+        next_earnings_date=step1_result.get("next_earnings_date", "unknown") or "unknown",
+    )
+    if feedback_brief:
+        cond_prompt += f"\n\n{feedback_brief}"
+    cond_result = run_step(adapter, system_prompt, cond_prompt, ConditionsSummaryOutput, f"{step_prefix}-cond")
+    stats["4b_conditions"] = adapter.last_usage.copy()
+
+    # Merge into NarrativeOutput-compatible dict
+    narrative = {
+        "bull_case_summary": bull_result.get("bull_case_summary", "See analysis."),
+        "bear_case_summary": bear_result.get("bear_case_summary", "See analysis."),
+        "key_conditions": cond_result.get("key_conditions", ["Hold as recommended"]),
+        "one_line_summary": cond_result.get("one_line_summary", "See analysis."),
+    }
+
+    return narrative, stats
 
 
 # ── LLM Step Runner ───────────────────────────────────────────────────────────
@@ -1671,38 +1925,19 @@ def run_pipeline(
         step5a_result = run_step(adapter, system_prompt, step5a_prompt, RecommendationOutput, "Phase 4a")
         pipeline_stats["phase4"]["4a_recommendation"] = adapter.last_usage.copy()
 
-    # Worker 4b: Narratives
-    logger.info("Phase 4b: Conditions & Narratives...")
-    step5b_prompt = load_prompt("step5b_narrative.md")
-    step5b_prompt = _fill_prompt(
-        step5b_prompt,
-        ticker=ticker,
-        recommendation=step5a_result.get("recommendation", "hold"),
-        confidence=str(step5a_result.get("confidence", 0.5)),
-        entry_price=str(step5a_result.get("entry_price", {}).get("ideal", 0)),
-        target_base=str(step5a_result.get("target_price", {}).get("base", 0)),
-        stop_loss=str(step5a_result.get("stop_loss", 0)),
-        position_size=str(step5a_result.get("position_size_recommended_usd", 0)),
-        fundamental_rating=step2_result.get("overall_fundamental_rating", "unknown"),
-        valuation_summary=valuation_summary,
-        growth_summary=growth_summary,
-        moat_summary=moat_summary,
-        balance_sheet_summary=balance_sheet_summary,
-        technical_rating=step3_result.get("overall_technical_rating", "unknown"),
-        support_levels=str(step3_result.get("support_levels", [])),
-        catalyst_summary=catalyst_summary,
-        risk_summary=risk_summary,
-        analyst_consensus_summary=analyst_consensus_summary,
-        concentration_risk=str(step4_result.get("concentration_risk_flag", False)),
-        existing_holdings=", ".join(risk_profile.existing_holdings) if risk_profile.existing_holdings else "None",
-    )
+    # Worker 4b: Narratives (3 focused calls: bull, bear, conditions)
+    logger.info("Phase 4b: Split narrative calls (bull, bear, conditions)...")
 
     if dry_run:
         step5b_result = _load_mock(ticker, "step5b")
         pipeline_stats["phase4"]["4b_narrative"] = {"input_tokens": 0, "output_tokens": 0, "latency_ms": 0}
     else:
-        step5b_result = run_step(adapter, system_prompt, step5b_prompt, NarrativeOutput, "Phase 4b")
-        pipeline_stats["phase4"]["4b_narrative"] = adapter.last_usage.copy()
+        step5b_result, narrative_stats = _run_narrative_calls(
+            adapter, system_prompt,
+            step5a_result, step1_result, step2_result, step3_result, step4_result,
+            price_zones, risk_profile, step_prefix="Phase 4b",
+        )
+        pipeline_stats["phase4"].update(narrative_stats)
 
     # ── Phase 5: Deterministic Post-Processing ─────────────────────────────
 
@@ -1748,6 +1983,15 @@ def run_pipeline(
     pipeline_stats["workers_succeeded"] = succeeded
     pipeline_stats["workers_failed"] = failed
 
+    # Store context needed for worker re-runs in feedback loop (not saved to disk)
+    pipeline_stats["_worker_rerun_context"] = {
+        "market_data": market_data,
+        "step1_base": step1_base,
+        "tech_indicators_full": tech_indicators,
+        "concentration": concentration,
+        "worker_results": dict(worker_results),  # copy so mutations don't affect original
+    }
+
     all_usage = list(pipeline_stats["workers"].values()) + list(pipeline_stats["phase4"].values())
     pipeline_stats["total_llm_calls"] = len([u for u in all_usage if u.get("input_tokens", 0) > 0])
     pipeline_stats["total_tokens_in"] = sum(u.get("input_tokens", 0) for u in all_usage)
@@ -1778,9 +2022,9 @@ def _build_feedback_brief(eval_report, iteration: int) -> str:
         "user_appropriateness": 0.10,
     }
 
-    # Sub-items that come from Phase 1-3 workers (data, not synthesis)
-    # These CANNOT be fixed by re-running Phase 4 — exclude from feedback
-    DATA_PHASE_ITEMS = {"news_substantive", "catalyst_variety", "risk_variety", "diverse_risk_categories"}
+    # Sub-items handled by worker re-runs (derived from WORKER_FEEDBACK_MAP)
+    # These CANNOT be fixed by re-running Phase 4 — exclude from Phase 4 feedback
+    WORKER_PHASE_ITEMS = set(WORKER_FEEDBACK_MAP.keys())
     # Sub-items that come from Phase 4a (recommendation / price levels)
     PHASE_4A_ITEMS = {
         "technical_alignment", "recommendation_follows_evidence", "confidence_calibrated",
@@ -1822,12 +2066,12 @@ def _build_feedback_brief(eval_report, iteration: int) -> str:
 
     # Items passing unanimously → "keep what works" list
     for sub_name, counts in all_sub_items.items():
-        if counts["fail"] == 0 and sub_name not in DATA_PHASE_ITEMS:
+        if counts["fail"] == 0 and sub_name not in WORKER_PHASE_ITEMS:
             passes.add(sub_name)
 
     # Filter out data-gap items (can't fix by re-running Phase 4)
-    actionable_failures = {k: v for k, v in failures.items() if k not in DATA_PHASE_ITEMS}
-    data_gap_count = sum(1 for k in failures if k in DATA_PHASE_ITEMS)
+    actionable_failures = {k: v for k, v in failures.items() if k not in WORKER_PHASE_ITEMS}
+    data_gap_count = sum(1 for k in failures if k in WORKER_PHASE_ITEMS)
 
     if not actionable_failures:
         return ""
@@ -1879,8 +2123,8 @@ def _build_feedback_brief(eval_report, iteration: int) -> str:
         lines.append("")
 
     if data_gap_count > 0:
-        lines.append(f"Note: {data_gap_count} data-gap issues exist (limited news/catalysts/risks) — "
-                      "these cannot be fixed, do not try to compensate for missing data.")
+        lines.append(f"Note: {data_gap_count} worker data-quality issues exist (news/catalysts/risks) — "
+                      "these are being addressed separately. Do not try to compensate for missing data.")
         lines.append("")
 
     # "Keep what works" — prevent regression on passing items
@@ -1905,6 +2149,121 @@ def _build_feedback_brief(eval_report, iteration: int) -> str:
     return "\n".join(lines)
 
 
+def _build_worker_feedback(eval_report) -> dict[str, str]:
+    """Extract worker-level failures from judge eval into per-worker feedback.
+
+    Uses WORKER_FEEDBACK_MAP to identify which sub-item failures map to which
+    Phase 1-3 workers. Builds a targeted feedback string per worker.
+
+    Returns: {worker_name: feedback_text} for workers that need re-running.
+    Only returns entries for workers where ≥40% of judges flagged a failure.
+    """
+    from workflow.schema import DIMENSION_SUB_ITEMS
+
+    pool = eval_report.layer2_pool
+    judges = pool.individual_results if pool else ([eval_report.layer2] if eval_report.layer2 else [])
+    if not judges:
+        return {}
+    num_judges = len(judges)
+
+    # Collect failures for sub-items that map to workers
+    worker_sub_failures: dict[str, list[str]] = {}  # sub_item -> [notes]
+    for judge in judges:
+        for dim_name in DIMENSION_SUB_ITEMS:
+            dim_score = getattr(judge, dim_name, None)
+            if dim_score is None or dim_score.sub_items is None:
+                continue
+            for sub_name, sub_result in dim_score.sub_items.items():
+                if sub_name in WORKER_FEEDBACK_MAP and not sub_result.met:
+                    worker_sub_failures.setdefault(sub_name, []).append(sub_result.note)
+
+    if not worker_sub_failures:
+        return {}
+
+    # Group failures by worker, filtering by consensus threshold
+    worker_feedback_lines: dict[str, list[str]] = {}
+    for sub_name, notes in worker_sub_failures.items():
+        consensus = len(notes) / num_judges
+        if consensus < 0.4:  # Less than 40% of judges flagged → skip
+            continue
+        best_note = max(notes, key=len) if notes else ""
+        for worker_name in WORKER_FEEDBACK_MAP[sub_name]:
+            worker_feedback_lines.setdefault(worker_name, []).append(
+                f"- **{sub_name}**: \"{best_note}\" ({len(notes)}/{num_judges} judges flagged)"
+            )
+
+    # Build feedback strings per worker
+    result = {}
+    for worker_name, lines in worker_feedback_lines.items():
+        feedback = (
+            "\n\n## Judge Feedback — Improve Your Response\n\n"
+            "Your previous output was evaluated by judges. Fix these issues:\n"
+            + "\n".join(lines)
+            + "\n\nBe MORE SPECIFIC: cite exact numbers (e.g., \"P/E of 28.3\" not \"fairly valued\"), "
+            "name specific events with dates, and cover diverse categories. Do NOT be vague."
+        )
+        result[worker_name] = feedback
+        logger.info(f"  [Worker Feedback] {worker_name}: {len(lines)} issue(s)")
+
+    return result
+
+
+def _rerun_failing_workers(
+    adapter,
+    system_prompt: str,
+    worker_feedback: dict[str, str],
+    step1_base: dict,
+    market_data: dict,
+    tech_indicators: dict,
+    risk_profile: RiskProfile,
+    prev_worker_results: dict,
+    max_workers: int = 4,
+    iteration: int = 0,
+) -> tuple[dict, dict]:
+    """Re-run specific Phase 1-3 workers with judge feedback injected.
+
+    Only re-runs workers that appear in worker_feedback. For each, the original
+    prompt is rebuilt from Phase 0 data and the feedback is appended.
+
+    Returns:
+        (merged_worker_results, rerun_stats)
+        merged_worker_results: original results with re-run workers overwritten.
+    """
+    # Build all worker prompts (same as original pipeline)
+    all_prompts = _build_worker_prompts(step1_base, market_data, tech_indicators, risk_profile)
+
+    # Filter to only workers with feedback, append feedback to their prompts
+    rerun_prompts = {}
+    for worker_name, feedback_text in worker_feedback.items():
+        if worker_name in all_prompts:
+            original_prompt, schema_class = all_prompts[worker_name]
+            enhanced_prompt = original_prompt + feedback_text
+            rerun_prompts[worker_name] = (enhanced_prompt, schema_class)
+
+    if not rerun_prompts:
+        return prev_worker_results, {}
+
+    worker_names = ", ".join(sorted(rerun_prompts.keys()))
+    logger.info(
+        f"  [Iteration {iteration}] Re-running {len(rerun_prompts)} workers "
+        f"with feedback: {worker_names}"
+    )
+
+    # Run failing workers in parallel
+    new_results, new_stats = _run_parallel_workers(adapter, system_prompt, rerun_prompts, max_workers)
+
+    # Merge: keep original results, overwrite with successful re-run results
+    merged = dict(prev_worker_results)
+    for name, result in new_results.items():
+        if result is not None:
+            merged[name] = result
+            logger.info(f"  [Iteration {iteration}] Updated worker {name}")
+        else:
+            logger.warning(f"  [Iteration {iteration}] Worker {name} re-run failed, keeping original")
+
+    return merged, new_stats
+
+
 def _rerun_phase4(
     adapter,
     system_prompt: str,
@@ -1919,9 +2278,9 @@ def _rerun_phase4(
     prev_result: AnalysisResult,
     iteration: int,
 ) -> tuple[AnalysisResult, dict]:
-    """Re-run Phase 4 (recommendation + narrative) with judge feedback injected.
+    """Re-run Phase 4 (recommendation + 3 split narratives) with judge feedback injected.
 
-    Reuses all Phase 0-3 data. Only re-runs the 2 LLM calls + deterministic assembly.
+    Reuses all Phase 0-3 data. Re-runs 4 LLM calls (1 rec + 3 narrative) + deterministic assembly.
     Returns: (new_result, phase4_stats)
     """
     ticker = prev_result.ticker
@@ -1995,34 +2354,15 @@ def _rerun_phase4(
     step5a_result = run_step(adapter, system_prompt, step5a_prompt, RecommendationOutput, f"Iter{iteration}-4a")
     phase4_stats = {"4a_recommendation": adapter.last_usage.copy()}
 
-    # Phase 4b: Narrative + feedback
-    logger.info(f"  [Iteration {iteration}] Re-running Phase 4b with judge feedback...")
-    step5b_prompt = load_prompt("step5b_narrative.md")
-    step5b_prompt = _fill_prompt(
-        step5b_prompt,
-        ticker=ticker,
-        recommendation=step5a_result.get("recommendation", "hold"),
-        confidence=str(step5a_result.get("confidence", 0.5)),
-        entry_price=str(step5a_result.get("entry_price", {}).get("ideal", 0)),
-        target_base=str(step5a_result.get("target_price", {}).get("base", 0)),
-        stop_loss=str(step5a_result.get("stop_loss", 0)),
-        position_size=str(step5a_result.get("position_size_recommended_usd", 0)),
-        fundamental_rating=step2_result.get("overall_fundamental_rating", "unknown"),
-        valuation_summary=valuation_summary,
-        growth_summary=growth_summary,
-        moat_summary=moat_summary,
-        balance_sheet_summary=balance_sheet_summary,
-        technical_rating=step3_result.get("overall_technical_rating", "unknown"),
-        support_levels=str(step3_result.get("support_levels", [])),
-        catalyst_summary=catalyst_summary,
-        risk_summary=risk_summary,
-        analyst_consensus_summary=analyst_consensus_summary,
-        concentration_risk=str(step4_result.get("concentration_risk_flag", False)),
-        existing_holdings=", ".join(risk_profile.existing_holdings) if risk_profile.existing_holdings else "None",
+    # Phase 4b: Split narrative calls + feedback
+    logger.info(f"  [Iteration {iteration}] Re-running Phase 4b (split) with judge feedback...")
+    step5b_result, narrative_stats = _run_narrative_calls(
+        adapter, system_prompt,
+        step5a_result, step1_result, step2_result, step3_result, step4_result,
+        price_zones, risk_profile, step_prefix=f"Iter{iteration}-4b",
+        feedback_brief=feedback_brief,
     )
-    step5b_prompt += f"\n\n{feedback_brief}"
-    step5b_result = run_step(adapter, system_prompt, step5b_prompt, NarrativeOutput, f"Iter{iteration}-4b")
-    phase4_stats["4b_narrative"] = adapter.last_usage.copy()
+    phase4_stats.update(narrative_stats)
 
     # Phase 5: Re-assemble
     fund_rating = step2_result.get("overall_fundamental_rating", "moderate")
@@ -2101,7 +2441,10 @@ def run_pipeline_with_feedback(
             "target_zone": [(p, l) for p, l in price_zones.get("target_zone", [])],
         }
 
-    system_prompt = "You are an expert financial analyst."
+    system_prompt = load_prompt("system.md")
+
+    # Extract worker rerun context (stored by run_pipeline for this purpose)
+    rerun_ctx = pipeline_stats.get("_worker_rerun_context")
 
     # Track best result across iterations — always return the highest-scoring one
     best_result = result
@@ -2144,17 +2487,66 @@ def run_pipeline_with_feedback(
 
         prev_score = score
 
-        # Build feedback and re-run Phase 4
+        # Build worker-level AND Phase 4-level feedback
         # Even if passed, keep iterating — might get a higher score
+        worker_fb = _build_worker_feedback(eval_report) if rerun_ctx else {}
         feedback_brief = _build_feedback_brief(eval_report, iteration)
-        if not feedback_brief:
+
+        if not worker_fb and not feedback_brief:
             logger.info("  [Feedback] No actionable failures — nothing left to improve")
             break
 
         logger.info(
             f"  [Feedback] Iteration {iteration}: {num_failures} failures, "
-            f"score {score:.2f}/5.0 — re-running Phase 4..."
+            f"score {score:.2f}/5.0"
         )
+
+        # Step 1: Re-run failing Phase 1-3 workers with targeted feedback
+        if worker_fb and rerun_ctx:
+            merged_workers, w_stats = _rerun_failing_workers(
+                adapter, system_prompt, worker_fb,
+                rerun_ctx["step1_base"], rerun_ctx["market_data"],
+                rerun_ctx["tech_indicators_full"], risk_profile,
+                rerun_ctx["worker_results"],
+                max_workers=config.get("workflow", {}).get("max_workers", 4),
+                iteration=iteration,
+            )
+            # Update stored worker results for next iteration
+            rerun_ctx["worker_results"] = merged_workers
+
+            # Re-assemble step results from updated workers
+            step1_result = _assemble_step1(rerun_ctx["step1_base"], merged_workers)
+            step2_result = _assemble_step2(ticker, merged_workers)
+            step3_result = _assemble_step3(
+                ticker, rerun_ctx["tech_indicators_full"], merged_workers
+            )
+            step4_result = _assemble_step4(
+                ticker, merged_workers, rerun_ctx["concentration"]
+            )
+
+            # Update result with new step data so _rerun_phase4 copies correct models
+            result = AnalysisResult(
+                ticker=ticker,
+                risk_profile=risk_profile,
+                model_name=adapter.get_model_name(),
+                timestamp=datetime.now().isoformat(),
+                step1_data=DataGatheringOutput.model_validate(step1_result),
+                step2_fundamental=FundamentalAnalysisOutput.model_validate(step2_result),
+                step3_technical=TechnicalAnalysisOutput.model_validate(step3_result),
+                step4_catalysts=CatalystRiskOutput.model_validate(step4_result),
+                step5_decision=result.step5_decision,
+            )
+            pipeline_stats.setdefault("worker_reruns", []).append(w_stats)
+
+        # Step 2: Re-run Phase 4 with (possibly updated) data + Phase 4 feedback
+        if not feedback_brief:
+            # Workers were re-run but no Phase 4 issues — still re-run Phase 4
+            # with updated data so it can incorporate the improved worker output
+            feedback_brief = (
+                "## Note\n\nWorker data has been updated with more specific information. "
+                "Re-generate your recommendation and narrative using the improved data."
+            )
+
         result, phase4_stats = _rerun_phase4(
             adapter, system_prompt, feedback_brief,
             step1_result, step2_result, step3_result, step4_result,
@@ -2448,12 +2840,20 @@ def print_rich_summary(result: AnalysisResult, stats: dict, eval_report=None, it
             print(f"  Iteration {it}: {sc:.2f}/5.0 {status_color}{status}{C_RESET} — {fl} failures{delta_str}{pick}")
             prev_sc = sc
         total_iters = len(iteration_history)
-        extra_calls = (total_iters - 1) * 2  # 2 LLM calls per re-run
+        phase4_calls = (total_iters - 1) * 4  # 4 LLM calls per Phase 4 re-run (1 rec + 3 narrative)
+        worker_rerun_calls = sum(
+            sum(1 for u in wr_stats.values() if u.get("input_tokens", 0) > 0)
+            for wr_stats in stats.get("worker_reruns", [])
+        )
+        extra_calls = phase4_calls + worker_rerun_calls
+        call_detail = f"{phase4_calls} Phase 4"
+        if worker_rerun_calls > 0:
+            call_detail += f" + {worker_rerun_calls} worker"
         any_passed = any(e["passed"] for e in iteration_history)
         if any_passed:
-            print(f"  {C_GREEN}Best: iteration {best_it}{C_RESET} ({best_sc:.2f}/5.0) — {extra_calls} extra LLM calls")
+            print(f"  {C_GREEN}Best: iteration {best_it}{C_RESET} ({best_sc:.2f}/5.0) — {extra_calls} extra LLM calls ({call_detail})")
         else:
-            print(f"  {C_YELLOW}Best: iteration {best_it}{C_RESET} ({best_sc:.2f}/5.0) — {extra_calls} extra LLM calls")
+            print(f"  {C_YELLOW}Best: iteration {best_it}{C_RESET} ({best_sc:.2f}/5.0) — {extra_calls} extra LLM calls ({call_detail})")
 
     print("\n" + "=" * W)
 

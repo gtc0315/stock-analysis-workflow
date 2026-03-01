@@ -159,25 +159,47 @@ Template at `eval/layer3_human/template.md` with gold-standard examples in `eval
 
 ## Feedback Loop
 
-When `--max-iterations > 1`, the system runs a critique-and-revise loop:
+When `--max-iterations > 1`, the system runs a two-tier critique-and-revise loop:
 
-1. Run full pipeline (11 LLM calls) → evaluate with 5 judges
-2. Collect failures, **prioritize by dimension weight × judge consensus**
-3. **Cap to top 6** actionable items — prevents small-model overwhelm
-4. **Exclude data gaps** (missing news/catalysts) — can't fix by re-running Phase 4
-5. **Include "keep what works"** list — prevents regression on passing items
-6. Re-run Phase 4 only (2 LLM calls) with feedback injected into prompts
+1. Run full pipeline (13 LLM calls) → evaluate with 5 judges
+2. Collect failures, split into **worker-level** and **Phase 4-level** feedback
+3. **Worker re-runs**: if judges flag data-quality issues (vague metrics, limited risks, etc.), re-run the responsible Phase 1-3 workers with targeted feedback
+4. **Phase 4 re-runs**: re-run recommendation + narrative with updated data + Phase 4 feedback
+5. Feedback is **prioritized by dimension weight × judge consensus**, **capped to top 6** items
+6. **"Keep what works"** list prevents regression on passing items
 7. Even if an iteration passes, **keep going** — might score higher next round
 8. **Track best result** across all iterations — always return the highest-scoring one
 9. **Early stop on regression** — if score drops >0.05, revert to best and stop
 
+### Worker-Level Feedback
+
+Judge sub-items are mapped to responsible workers:
+
+| Sub-item | Worker(s) | What it fixes |
+|---|---|---|
+| `metrics_cited` | 2a-2d (fundamentals) | "P/E of 28" instead of "fairly valued" |
+| `news_substantive` | 1a (news) | More specific, impactful headlines |
+| `catalyst_variety` | 3b (catalysts) | More diverse catalyst types |
+| `risk_variety`, `diverse_risk_categories` | 3c (risks) | Market + regulatory + competitive risks |
+
 ```
 Example: --max-iterations 3
   Iteration 0: 3.80/5.0 FAILED — 16 failures
+  → Re-running 5 workers (2a,2b,2c,2d,3c) + Phase 4
   Iteration 1: 4.10/5.0 PASSED — 8 failures   ↑+0.30  ★ selected
   Iteration 2: 3.95/5.0 PASSED — 10 failures  ↓-0.15  (regression, stopped)
-  Best: iteration 1 (4.10/5.0) — 4 extra LLM calls
+  Best: iteration 1 (4.10/5.0) — 12 extra LLM calls (4 Phase 4 + 8 worker)
 ```
+
+### 8B Model Optimizations
+
+The pipeline is designed for small (8B parameter) local models via Ollama:
+
+1. **Split narratives**: Step 5b is 3 separate calls (bull, bear, conditions) with 1-2 output fields each, instead of 1 call with 4 fields
+2. **Pre-computed facts**: `_compute_phase4b_facts()` computes stop-loss technical basis, downside %, dollar loss, analyst consensus interpretation, and injects them into prompts so the 8B model can cite them directly
+3. **Concrete examples**: Worker prompts include good/bad JSON examples showing the expected specificity level
+4. **Auto-pass for ETFs**: `earnings_discussed` judge sub-item auto-passes when `next_earnings_date` is null (ETFs like SLV have no earnings)
+5. **One question per call**: Each worker handles exactly one assessment (1-4 output fields), keeping within 8B model capabilities
 
 ## Configuration
 
@@ -228,9 +250,11 @@ ollama pull granite3.2:8b   # for judge pool
 | Phase | Calls | Notes |
 |---|---|---|
 | Phase 1-3: Workers | 9 | Parallel (4 concurrent) |
-| Phase 4: Recommendation + Narrative | 2 | Sequential (4b depends on 4a) |
-| **Total per run** | **11** | |
-| Feedback iteration | +2 | Re-runs Phase 4 only |
+| Phase 4a: Recommendation | 1 | Sequential (4b depends on 4a output) |
+| Phase 4b: Narratives (split) | 3 | Bull case + bear case + conditions/summary |
+| **Total per run** | **13** | |
+| Feedback iteration (Phase 4 only) | +4 | Re-runs recommendation + 3 narrative calls |
+| Feedback iteration (with workers) | +4 to +9 | Re-runs failing workers + Phase 4 |
 | Eval (judge pool) | +5 | 5 judge models in parallel |
 
 ## Cross-Model Comparison
@@ -290,7 +314,10 @@ stock-analysis-workflow/
 │       ├── worker_3b_catalysts.md     # → upcoming catalysts
 │       ├── worker_3c_risks.md         # → key risks
 │       ├── step5a_recommendation.md   # → buy/sell + price levels
-│       └── step5b_narrative.md        # → conditions, bull/bear case
+│       ├── step5b_narrative.md        # Legacy combined (kept for backward compat)
+│       ├── step5b_bull.md            # → bull case (1 field, pre-computed facts)
+│       ├── step5b_bear.md            # → bear case (1 field, pre-computed downside)
+│       └── step5b_conditions.md      # → conditions + one-liner (2 fields)
 │
 ├── adapters/
 │   ├── base.py                        # Abstract LLMAdapter interface
