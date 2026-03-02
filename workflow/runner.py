@@ -2390,9 +2390,13 @@ def run_pipeline_with_feedback(
     adapter,
     config: dict,
     max_iterations: int = 1,
+    max_worker_swap: int = 0,
     dry_run: bool = False,
 ) -> tuple[AnalysisResult, dict, object, list]:
-    """Run pipeline with optional judge feedback loop.
+    """Run pipeline with optional judge feedback loop and judge-as-worker swap.
+
+    When max_worker_swap > 0 and the feedback loop fails, the strictest judge
+    is promoted to Phase 4 worker for additional attempts.
 
     Returns: (result, pipeline_stats, eval_report, iteration_history)
     iteration_history is a list of dicts: [{iteration, score, failures, passed}, ...]
@@ -2584,6 +2588,33 @@ def run_pipeline_with_feedback(
         f"(score: {best_score:.2f}/5.0) out of {total_iters} evaluated"
     )
 
+    # ── Judge-as-Worker Swap ──────────────────────────────────────────
+    # If feedback loop failed and swap is enabled, promote the strictest
+    # judge to act as Phase 4 worker for additional attempts.
+    if max_worker_swap > 0 and not eval_report.overall_passed:
+        swap_out = _run_judge_swap(
+            ticker=ticker,
+            risk_profile=risk_profile,
+            config=config,
+            best_result=result,
+            best_eval=eval_report,
+            best_score=best_score,
+            best_iteration=best_iteration,
+            iteration_history=iteration_history,
+            pipeline_stats=pipeline_stats,
+            step1_result=step1_result,
+            step2_result=step2_result,
+            step3_result=step3_result,
+            step4_result=step4_result,
+            tech_indicators=tech_indicators,
+            price_zones=price_zones,
+            max_worker_swap=max_worker_swap,
+        )
+        result = swap_out["best_result"]
+        eval_report = swap_out["best_eval"]
+        best_score = swap_out["best_score"]
+        best_iteration = swap_out["best_iteration"]
+
     return result, pipeline_stats, eval_report, iteration_history
 
 
@@ -2606,6 +2637,166 @@ def _count_failures(eval_report) -> int:
                 if not sub_result.met:
                     failed_items.add(sub_name)
     return len(failed_items)
+
+
+# ── Judge-as-Worker Swap ─────────────────────────────────────────────────────
+
+
+def _find_strictest_judge(eval_report) -> str | None:
+    """Find the strictest judge (lowest overall_weighted_average) from the eval.
+
+    Returns the judge_model name string, or None if no judges available.
+    """
+    pool = eval_report.layer2_pool
+    if pool and pool.individual_results:
+        strictest = min(
+            pool.individual_results,
+            key=lambda jr: jr.overall_weighted_average,
+        )
+        return strictest.judge_model
+    elif eval_report.layer2:
+        return eval_report.layer2.judge_model
+    return None
+
+
+def _run_judge_swap(
+    ticker: str,
+    risk_profile: RiskProfile,
+    config: dict,
+    best_result: AnalysisResult,
+    best_eval,
+    best_score: float,
+    best_iteration,
+    iteration_history: list,
+    pipeline_stats: dict,
+    step1_result: dict,
+    step2_result: dict,
+    step3_result: dict,
+    step4_result: dict,
+    tech_indicators: dict,
+    price_zones: dict,
+    max_worker_swap: int,
+) -> dict:
+    """Promote the strictest judge to Phase 4 worker for additional attempts.
+
+    When the normal feedback loop exhausts without passing, this function
+    swaps the strictest judge (lowest-scoring) into the worker role for
+    Phase 4 re-runs. The strictest judge knows what "good" looks like,
+    so output it generates should satisfy the other judges.
+
+    The swapped-in model is automatically excluded from judging via the
+    existing self-eval filter in run_eval().
+
+    Returns dict with updated best_result, best_eval, best_score, best_iteration.
+    """
+    import copy
+    from eval.run_eval import run_eval
+
+    strictest_model = _find_strictest_judge(best_eval)
+    if strictest_model is None:
+        logger.warning("  [Judge Swap] No judge results available — skipping swap")
+        return {
+            "best_result": best_result,
+            "best_eval": best_eval,
+            "best_score": best_score,
+            "best_iteration": best_iteration,
+        }
+
+    # Determine judge provider from eval config
+    judge_provider = config.get("eval", {}).get("judge_provider")
+    if not judge_provider:
+        logger.warning("  [Judge Swap] No judge_provider configured — skipping swap")
+        return {
+            "best_result": best_result,
+            "best_eval": best_eval,
+            "best_score": best_score,
+            "best_iteration": best_iteration,
+        }
+
+    # Create adapter for the strictest judge model
+    swap_config = copy.deepcopy(config)
+    swap_config["providers"][judge_provider]["default_model"] = strictest_model
+    swap_adapter = create_adapter(judge_provider, swap_config)
+
+    logger.info(
+        f"  [Judge Swap] Promoting strictest judge '{strictest_model}' as Phase 4 worker "
+        f"(up to {max_worker_swap} attempts)"
+    )
+
+    system_prompt = load_prompt("system.md")
+    result = best_result  # Start from the best result so far
+    current_eval = best_eval
+
+    for swap_iter in range(1, max_worker_swap + 1):
+        swap_label = f"swap-{swap_iter}"
+
+        # Build feedback from the most recent eval
+        feedback_brief = _build_feedback_brief(current_eval, swap_iter)
+        if not feedback_brief:
+            feedback_brief = (
+                "## Note\n\nYou are a replacement model generating the final analysis. "
+                "Re-generate your recommendation and narrative with maximum quality."
+            )
+
+        # Re-run Phase 4 with the swap adapter
+        logger.info(f"  [Judge Swap] Iteration {swap_label}: re-running Phase 4 with {strictest_model}...")
+        result, phase4_stats = _rerun_phase4(
+            swap_adapter, system_prompt, feedback_brief,
+            step1_result, step2_result, step3_result, step4_result,
+            risk_profile, tech_indicators, price_zones,
+            result, swap_label,
+        )
+        pipeline_stats.setdefault("judge_swap_iterations", []).append(phase4_stats)
+
+        # Evaluate — the swapped-in model is now result.model_name,
+        # so run_eval's self-eval filter auto-excludes it from judging
+        logger.info(f"  [Judge Swap] Evaluating {swap_label}...")
+        eval_report = run_eval(result, config)
+        score = eval_report.layer2_pool.overall_weighted_average if eval_report.layer2_pool else (
+            eval_report.layer2.overall_weighted_average if eval_report.layer2 else 0
+        )
+        num_failures = _count_failures(eval_report)
+
+        iteration_history.append({
+            "iteration": swap_label,
+            "score": score,
+            "passed": eval_report.overall_passed,
+            "failures": num_failures,
+            "swap_model": strictest_model,
+        })
+
+        # Track best
+        if score > best_score:
+            best_score = score
+            best_result = result
+            best_eval = eval_report
+            best_iteration = swap_label
+
+        current_eval = eval_report
+
+        if eval_report.overall_passed:
+            logger.info(
+                f"  [Judge Swap] PASSED at {swap_label} (score: {score:.2f}/5.0) "
+                f"using {strictest_model}"
+            )
+            break
+
+        logger.info(
+            f"  [Judge Swap] {swap_label}: {num_failures} failures, score {score:.2f}/5.0"
+        )
+
+    status = "PASSED" if best_eval.overall_passed else "FAILED"
+    logger.info(
+        f"  [Judge Swap] Done: {status} — best is '{best_iteration}' "
+        f"(score: {best_score:.2f}/5.0)"
+    )
+
+    return {
+        "best_result": best_result,
+        "best_eval": best_eval,
+        "best_score": best_score,
+        "best_iteration": best_iteration,
+    }
 
 
 # ── Save & CLI ────────────────────────────────────────────────────────────────
@@ -2825,6 +3016,7 @@ def print_rich_summary(result: AnalysisResult, stats: dict, eval_report=None, it
             sc = entry["score"]
             fl = entry["failures"]
             passed = entry["passed"]
+            swap_model = entry.get("swap_model")
             status_color = C_GREEN if passed else C_RED
             status = "PASSED" if passed else "FAILED"
             # Show delta from previous iteration
@@ -2837,18 +3029,25 @@ def print_rich_summary(result: AnalysisResult, stats: dict, eval_report=None, it
                 delta_str = ""
             # Mark best iteration with ★
             pick = f"  {C_YELLOW}★ selected{C_RESET}" if it == best_it and len(iteration_history) > 1 else ""
-            print(f"  Iteration {it}: {sc:.2f}/5.0 {status_color}{status}{C_RESET} — {fl} failures{delta_str}{pick}")
+            # Show swap model indicator
+            swap_str = f"  {C_CYAN}[swap: {swap_model}]{C_RESET}" if swap_model else ""
+            print(f"  Iteration {it}: {sc:.2f}/5.0 {status_color}{status}{C_RESET} — {fl} failures{delta_str}{pick}{swap_str}")
             prev_sc = sc
-        total_iters = len(iteration_history)
-        phase4_calls = (total_iters - 1) * 4  # 4 LLM calls per Phase 4 re-run (1 rec + 3 narrative)
+        # Count LLM calls: feedback iterations + worker re-runs + judge swaps
+        num_feedback_iters = sum(1 for e in iteration_history if not e.get("swap_model") and e["iteration"] != 0)
+        num_swap_iters = sum(1 for e in iteration_history if e.get("swap_model"))
+        phase4_calls = num_feedback_iters * 4  # 4 LLM calls per Phase 4 re-run (1 rec + 3 narrative)
+        swap_calls = num_swap_iters * 4  # 4 LLM calls per swap iteration
         worker_rerun_calls = sum(
             sum(1 for u in wr_stats.values() if u.get("input_tokens", 0) > 0)
             for wr_stats in stats.get("worker_reruns", [])
         )
-        extra_calls = phase4_calls + worker_rerun_calls
+        extra_calls = phase4_calls + worker_rerun_calls + swap_calls
         call_detail = f"{phase4_calls} Phase 4"
         if worker_rerun_calls > 0:
             call_detail += f" + {worker_rerun_calls} worker"
+        if swap_calls > 0:
+            call_detail += f" + {swap_calls} swap"
         any_passed = any(e["passed"] for e in iteration_history)
         if any_passed:
             print(f"  {C_GREEN}Best: iteration {best_it}{C_RESET} ({best_sc:.2f}/5.0) — {extra_calls} extra LLM calls ({call_detail})")
@@ -2907,6 +3106,12 @@ def main():
         default=1,
         help="Max feedback iterations (1=no feedback loop, 3=up to 2 revision rounds)",
     )
+    parser.add_argument(
+        "--max-worker-swap",
+        type=int,
+        default=0,
+        help="After feedback loop fails, promote strictest judge as worker for N extra attempts (0=disabled)",
+    )
 
     args = parser.parse_args()
 
@@ -2963,7 +3168,9 @@ def main():
         try:
             result, pipeline_stats, eval_report, iteration_history = run_pipeline_with_feedback(
                 args.ticker.upper(), risk_profile, adapter, config,
-                max_iterations=args.max_iterations, dry_run=args.dry_run,
+                max_iterations=args.max_iterations,
+                max_worker_swap=args.max_worker_swap,
+                dry_run=args.dry_run,
             )
             result_path = save_result(result)
 
